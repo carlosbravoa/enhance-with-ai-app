@@ -19,7 +19,7 @@ class MainWindow(Adw.ApplicationWindow):
             "Explain",
             "Enhance",
             "Proofread",
-            "Write your own"
+            "Write your own prompt"
         ]
 
 
@@ -67,26 +67,8 @@ class MainWindow(Adw.ApplicationWindow):
         header.pack_end(self.spinner)
 
 
-        """     
-        # Clipboard button
-        clipboard_btn = Gtk.Button(
-            icon_name="edit-paste-symbolic",
-            tooltip_text="Paste from clipboard"
-        )
-        clipboard_btn.connect("clicked", self.on_paste_clipboard)
-        header.pack_start(clipboard_btn)
-
-        # Spinner (activity indicator)
-        self.spinner = Gtk.Spinner()
-        header.pack_end(self.spinner) """
-
-
         # --- Main content ---
-        #self.prompt_entry = Gtk.Entry(
-        #    placeholder_text="Quick prompt"
-        #)
 
-        # The new dropdown
         # Instruction selector
         self.prompt_dropdown = Gtk.DropDown.new_from_strings(self.prompt_options)
         self.prompt_dropdown.set_selected(0)
@@ -217,7 +199,7 @@ class MainWindow(Adw.ApplicationWindow):
                 "Please enter a prompt or some text before sending."
             )
             return None
-
+        print(instruction)
         return instruction
 
     # ----------------------------
@@ -346,13 +328,13 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_prompt_changed(self, dropdown, _):
         selected = dropdown.get_selected()
-        is_custom = self.prompt_options[selected] == "Write your own"
+        is_custom = self.prompt_options[selected] == "Write your own prompt"
         self.custom_prompt_entry.set_visible(is_custom)
 
     def _get_instruction(self):
         option = self.prompt_options[self.prompt_dropdown.get_selected()]
 
-        if option == "Write your own":
+        if option == "Write your own prompt":
             return self.custom_prompt_entry.get_text().strip()
 
         return option.lower()
