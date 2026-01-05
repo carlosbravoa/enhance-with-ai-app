@@ -1,4 +1,5 @@
-# enhance-with-ai-app
+# Enhance With AI — A ChatGPT python application
+
 A ChatGPT GTK app for Ubuntu.
 It will allow you to paste from clipboard a text and run typical tasks such as summarize, enhance, explain, proofread, etc.
 You can also write your own prompt.
