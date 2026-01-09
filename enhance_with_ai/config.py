@@ -2,14 +2,14 @@ from pathlib import Path
 
 CONFIG_DIR = Path.home() / ".config" / "enhance-with-ai"
 CONFIG_FILE = CONFIG_DIR / "config"
-DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_MODEL = "gpt-5-mini"
 
 TEMPLATE = """# Enhance With AI – configuration file
 # Required:
 OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Optional (defaults to gpt-4o-mini if missing)
-MODEL=gpt-4o-mini
+MODEL=gpt-5-mini
 """
 
 class ConfigError(Exception):
@@ -21,7 +21,7 @@ def load_config():
         CONFIG_FILE.write_text(TEMPLATE)
         raise ConfigError(
             f"Configuration file created at:\n\n{CONFIG_FILE}\n\n"
-            "Please add your OpenAI API key and restart the app."
+            f"The default model is {DEFAULT_MODEL}. You can update it in this file"
         )
 
     api_key = None

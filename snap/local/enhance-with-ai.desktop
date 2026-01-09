@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Enhance with AI
+Comment=Enhance text using AI
+Exec=enhance-with-ai-openai
+Icon=${SNAP}/meta/gui/enhance-with-ai.png
+Terminal=false
+Type=Application
+Categories=Utility;TextEditor;
+StartupNotify=true
+

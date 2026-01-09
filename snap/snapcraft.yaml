@@ -1,0 +1,48 @@
+name: enhance-with-ai-openai
+base: core24
+version: '1.0.0'
+summary: Enhance text using AI (ChatGPT)
+description: |
+  A GTK-based desktop application that enhances text using OpenAI APIs.
+
+grade: stable
+confinement: strict
+
+apps:
+  enhance-with-ai-openai:
+    #environment:
+    #    GTK_USE_PORTAL: "1"
+    command: bin/enhance-with-ai
+    extensions: [gnome]
+    plugs:
+      - network
+      - home
+      - gsettings
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+      - password-manager-service
+
+parts:
+  enhance-with-ai-openai:
+    plugin: python
+    source: .
+    python-packages:
+      - openai
+      - requests
+      - secretstorage
+    build-packages:
+      - python3-dev
+
+    override-build: |
+      craftctl default
+
+      # Desktop file
+      install -Dm644 snap/local/enhance-with-ai.desktop \
+        $CRAFT_PART_INSTALL/meta/gui/enhance-with-ai.desktop
+
+      # Icon
+      install -Dm644 snap/local/enhance-with-ai.png \
+        $CRAFT_PART_INSTALL/meta/gui/enhance-with-ai.png
+

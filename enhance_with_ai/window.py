@@ -3,16 +3,17 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, GLib, Gdk
-from .config import load_config, ConfigError
-from .openai_client import OpenAIClient
 import threading
 
+from enhance_with_ai.secrets import get_api_key, set_api_key
+from enhance_with_ai.config import load_config, ConfigError
+from enhance_with_ai.openai_client import OpenAIClient
 
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app)
 
-        self.set_title("Enhance With AI")
+        self.set_title("Enhance With AI (Chat GPT)")
         self.set_default_size(900, 650)
 
         self.cancel_stream = False
@@ -30,7 +31,8 @@ class MainWindow(Adw.ApplicationWindow):
 
         self._setup_css()
         self._build_ui()
-        self._load_config()
+        #self._load_config()
+        GLib.idle_add(self._load_config)
 
         key_controller = Gtk.EventControllerKey()
         key_controller.connect("key-pressed", self.on_key_pressed)
@@ -68,12 +70,23 @@ class MainWindow(Adw.ApplicationWindow):
     # UI
     # -------------------------------------------------
     def _build_ui(self):
-        # Header bar (minimal, clean)
+        # Header bar
         header = Adw.HeaderBar()
-        header.set_title_widget(Gtk.Label(label="Enhance With AI"))
+        header.set_title_widget(Gtk.Label(label="Enhance With AI (ChatGPT)"))
+        
+        # API key button
+        api_key_btn = Gtk.Button(
+            icon_name="emblem-system-symbolic",
+            tooltip_text="Change API key"
+        )
+        api_key_btn.connect("clicked", self.on_change_api_key)
 
+        header.pack_end(api_key_btn)
+        
+        # Spinner
         self.spinner = Gtk.Spinner()
         header.pack_end(self.spinner)
+
 
         # Prompt selector
         self.prompt_dropdown = Gtk.DropDown.new_from_strings(self.prompt_options)
@@ -197,10 +210,28 @@ class MainWindow(Adw.ApplicationWindow):
     # -------------------------------------------------
     # Config
     # -------------------------------------------------
+    def _init_client(self, api_key, model):
+        try:
+            self.client = OpenAIClient(api_key, model)
+        except Exception as e:
+            self._show_error(
+                "Initialization failed",
+                str(e)
+            )
     def _load_config(self):
         try:
-            api_key, model = load_config()
-            self.client = OpenAIClient(api_key, model)
+            _, model = load_config()
+
+            api_key = get_api_key()
+            if api_key:
+                self.client = OpenAIClient(api_key, model)
+                return
+
+            # No API key → prompt user
+            self._prompt_for_api_key(
+                on_success=lambda key: self._init_client(key, model)
+            )
+
         except ConfigError as e:
             self._show_error("Configuration required", str(e))
 
@@ -312,7 +343,6 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             prompt = f"{instruction} the following text:\n\n {text}".strip()
 
-        print(prompt)
         return prompt
 
     # -------------------------------------------------
@@ -351,3 +381,86 @@ class MainWindow(Adw.ApplicationWindow):
         )
         dialog.add_response("ok", "OK")
         dialog.present()
+
+    def _prompt_for_api_key(self, on_success):
+        """
+        Show a modal dialog asking for the API key.
+        Calls on_success(api_key) if the user saves.
+        """
+
+        entry = Gtk.PasswordEntry()
+        entry.set_property("placeholder-text", "sk-…")
+        entry.set_show_peek_icon(True)
+        entry.set_hexpand(True)
+
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            margin_top=12,
+            margin_bottom=12,
+            margin_start=12,
+            margin_end=12,
+        )
+
+        box.append(Gtk.Label(
+            label="Enter your OpenAI API key",
+            halign=Gtk.Align.START
+        ))
+        box.append(entry)
+
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading="API key required",
+            body="Your API key will be stored securely in GNOME Keyring.",
+        )
+
+        dialog.set_extra_child(box)
+
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("save", "Save")
+        dialog.set_response_appearance(
+            "save", Adw.ResponseAppearance.SUGGESTED
+        )
+
+        def on_response(dialog, response):
+            if response == "save":
+                api_key = entry.get_text().strip()
+                if not api_key:
+                    self._show_error(
+                        "Invalid API key",
+                        "The API key cannot be empty."
+                    )
+                else:
+                    try:
+                        set_api_key(api_key)
+                        on_success(api_key)
+                    except Exception as e:
+                        self._show_error(
+                            "Failed to save API key",
+                            str(e)
+                        )
+            dialog.destroy()
+
+        dialog.connect("response", on_response)
+        dialog.present()
+
+
+    def on_change_api_key(self, _):
+        self._prompt_for_api_key(
+            on_success=self._on_api_key_changed
+        )
+    
+    def _on_api_key_changed(self, api_key):
+        try:
+            # Recreate client with existing model
+            model = self.client.model if self.client else None
+            if not model:
+                _, model = load_config()
+
+            self.client = OpenAIClient(api_key, model)
+        except Exception as e:
+            self._show_error(
+                "Failed to update API key",
+                str(e)
+            )
+

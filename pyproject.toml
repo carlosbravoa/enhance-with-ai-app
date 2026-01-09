@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enhance-with-ai-openai"
+version = "0.1.0"
+description = "Enhance text with AI"
+readme = "README.md"
+dependencies = [
+    "PyGObject",
+    "openai",
+    "requests",
+    "secretstorage",
+]
+
+[project.scripts]
+enhance-with-ai = "enhance_with_ai.app:main"
+
+[tool.setuptools]
+packages = ["enhance_with_ai"]
